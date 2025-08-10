@@ -85,7 +85,7 @@ def split_nodes_image(old_nodes):
         
         if len(list_of_links) == 0:
             ret_nodes.append(node)
-            continue  # Add this!
+            continue  
 
         else:
             for link in list_of_links:
@@ -120,9 +120,9 @@ def split_nodes_link(old_nodes):
 
         if len(list_of_links) == 0:
             ret_nodes.append(node)
-            continue  # Add this!
+            continue  
 
-        else:  # Add this!
+        else:  
             for link in list_of_links:
                 split_text =  f"[{link[0]}]({link[1]})"
                 text_list = text.split(split_text, 1)
@@ -159,3 +159,84 @@ def markdown_to_blocks(markdown):
     blocks = list(filter(lambda x : len(x) > 0, blocks))
     return blocks
 
+
+def text_to_children(text):
+    text_nodes = text_to_textnodes(text)
+    ret_nodes = []
+    for node in text_nodes:
+        ret_nodes.append(text_node_to_html_node(node))
+    return ret_nodes
+
+
+def markdown_to_html_node(markdown):
+    blocks = markdown_to_blocks(markdown)
+    main_child_nodes = []
+
+    for block in blocks:
+        block = block.strip()
+        parser = MarkdownParser()
+        type = parser.block_to_block_type(block)
+        node = None
+
+        match type:
+            case BlockType.HEADING:
+                heading_count = len(block) - len(block.lstrip("#"))
+                heading_text = block.lstrip("#").strip()
+                child_nodes = text_to_children(heading_text)
+                node = ParentNode(f"h{heading_count}", child_nodes, None)
+
+            case BlockType.CODE:
+                lines = block.splitlines()
+                code_lines = lines[1:-1]
+                code_text = "\n".join(line.strip() for line in code_lines) + "\n"
+                node = ParentNode("pre", [LeafNode("code", code_text, None)], None)
+
+            case BlockType.QUOTE:
+                lines = block.splitlines()
+                quote_lines = []
+                for line in lines:
+                    line_without_gt = line[1:]
+                    quote_lines.append(line_without_gt.strip())
+                quote_text = " ".join(quote_lines)
+                child_nodes = text_to_children(quote_text)
+                node = ParentNode("blockquote", child_nodes, None)
+                
+            case BlockType.PARAGRAPH:
+                paragraph_text = " ".join(line.strip() for line in block.splitlines())
+                child_nodes = text_to_children(paragraph_text)
+                node = ParentNode("p", child_nodes, None)
+
+            case BlockType.UNORDERED_LIST:
+                lines = block.splitlines()
+                list_lines = []
+                for line in lines:
+                    line_without_dash = line[1:]
+                    list_lines.append(line_without_dash.strip())
+                
+                list_of_li_nodes = []
+                for line in list_lines:
+                    child_nodes = text_to_children(line)
+                    list_of_li_nodes.append(HTMLNode("li", None, child_nodes))
+                
+                node = ParentNode("ul", list_of_li_nodes, None)
+
+            case BlockType.ORDERED_LIST:
+                lines = block.splitlines()
+                list_lines = []
+                for line in lines:
+                    pattern = r'^\d+\.\s+(.*)$'
+                    match = re.match(pattern, line.strip())
+                    if match:
+                        list_lines.append(match.group(1))
+
+                list_of_li_nodes = []
+                for line in list_lines:
+                    child_nodes = text_to_children(line)
+                    list_of_li_nodes.append(HTMLNode("li", None, child_nodes))
+                
+                node = ParentNode("ol",  list_of_li_nodes, None)
+
+        main_child_nodes.append(node)
+
+    return ParentNode("div",  main_child_nodes, None)    
+        
