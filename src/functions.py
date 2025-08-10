@@ -3,6 +3,7 @@ from nodes.textnode import *
 from nodes.leafnode import *
 from nodes.htmlnode import *
 from nodes.parentnode import *
+from nodes.blocktype import *
 
 # Convert TextNodes into HTMLNodes
 def text_node_to_html_node(text_node):
@@ -150,3 +151,11 @@ def text_to_textnodes(text):
     nodes = split_nodes_image(nodes)
     nodes = split_nodes_link(nodes)
     return nodes
+
+
+def markdown_to_blocks(markdown):
+    blocks = markdown.split("\n\n")
+    blocks = list(map(lambda x : x.strip(), blocks))
+    blocks = list(filter(lambda x : len(x) > 0, blocks))
+    return blocks
+
