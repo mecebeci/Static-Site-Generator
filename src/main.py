@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 from nodes.textnode import TextNode, TextType
 from functions import *
@@ -35,7 +36,7 @@ def extract_title(markdown):
     if not header:
         raise Exception("There is no header!")
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 
     if not os.path.isfile(from_path):
@@ -53,6 +54,8 @@ def generate_page(from_path, template_path, dest_path):
 
     template = template.replace("{{ Title }}", title)
     template = template.replace("{{ Content }}", html_string)
+    template = template.replace('href="/"', f'href="{basepath}"')
+    template = template.replace('src="/"', f'src="{basepath}"')
 
     # Ensure destination directory exists
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
@@ -60,7 +63,7 @@ def generate_page(from_path, template_path, dest_path):
     with open(dest_path, "w") as dest_file:
         dest_file.write(template)
     
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     for root, dirs, files in os.walk(dir_path_content):
         for file in files:
             if file.lower().endswith(".md"):
@@ -77,12 +80,13 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
                 dest_path = os.path.join(dest_dir_path, rel_html_path)
 
                 # Generate the HTML file
-                generate_page(from_path, template_path, dest_path)
+                generate_page(from_path, template_path, dest_path, basepath)
 
 
 def main():
-    copy_dir_recursive("static", "public")
-    generate_pages_recursive("content", "template.html", "public")
+    basepath = sys.argv[1] if len(sys.argv) > 1 else "/"
+    copy_dir_recursive("static", "docs")
+    generate_pages_recursive("content", "template.html", "docs", basepath)
 
 if __name__ == "__main__":
     main()
