@@ -2,7 +2,7 @@ import os
 import shutil
 
 from nodes.textnode import TextNode, TextType
-from functions import split_nodes_image
+from functions import *
 
 def copy_dir_recursive(source, destination):
     # Ensure destination exists and clean
@@ -24,18 +24,45 @@ def copy_dir_recursive(source, destination):
             print(f"Copied file: {destination_path}")
 
 
+def extract_title(markdown):
+    lines = markdown.splitlines()
+    header = None
+    for line in lines:
+        line = line.strip()
+        if line[:2] == "# ":
+            header = line[2:]
+            return header
+    if not header:
+        raise Exception("There is no header!")
+
+def generate_page(from_path, template_path, dest_path):
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+
+    if not os.path.isfile(from_path):
+        raise FileNotFoundError(f"The file '{from_path}' does not exist.")
+    with open(from_path, "r") as from_path_file:
+        markdown = from_path_file.read()
+
+    if not os.path.isfile(template_path):
+        raise FileNotFoundError(f"The file '{template_path} does not exist.'")
+    with open(template_path, "r") as template_path_file:
+        template = template_path_file.read()
+
+    html_string = markdown_to_html_node(markdown).to_html()
+    title = extract_title(markdown)
+
+    template = template.replace("{{ Title }}", title)
+    template = template.replace("{{ Content }}", html_string)
+
+    # Ensure destination directory exists
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+
+    with open(dest_path, "w") as dest_file:
+        dest_file.write(template)
+    
 def main():
-    # text_node = TextNode("This is some anchor text", "link", "https://boot.dev")
-    # print(text_node)
-
-    # test_str = "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)"
-    # nodes = [TextNode(test_str, TextType.TEXT)]
-    # result = split_nodes_image(nodes)
-    # for node in result:
-    #     print(node)
-
     copy_dir_recursive("static", "public")
-
+    generate_page("content/index.md", "template.html", "public/index.html")
 
 if __name__ == "__main__":
     main()

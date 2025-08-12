@@ -32,35 +32,24 @@ def text_node_to_html_node(text_node):
 
 # Split Delimiter
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
-    ret_nodes = []
-    for node in old_nodes:
-        if node.text_type != TextType.TEXT:
-            ret_nodes.append(node)
+    new_nodes = []
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.TEXT:
+            new_nodes.append(old_node)
             continue
-        
-        else:
-            count = node.text.count(delimiter)
-            if count % 2 != 0:
-                raise Exception("Invalid Markdown syntax...")
-            if count == 0:
-                ret_nodes.append(node)
+        split_nodes = []
+        sections = old_node.text.split(delimiter)
+        if len(sections) % 2 == 0:
+            raise ValueError("invalid markdown, formatted section not closed")
+        for i in range(len(sections)):
+            if sections[i] == "":
                 continue
-
-            text_list = node.text.split(delimiter)
-            
-            i = 0
-            while i < len(text_list):
-                if len(text_list[i]) == 0:
-                    i += 1
-                    continue
-                if i % 2 == 0:
-                    new_node = TextNode(text_list[i], TextType.TEXT)
-                else:
-                    new_node = TextNode(text_list[i], text_type)
-                
-                ret_nodes.append(new_node)
-                i += 1
-    return ret_nodes
+            if i % 2 == 0:
+                split_nodes.append(TextNode(sections[i], TextType.TEXT))
+            else:
+                split_nodes.append(TextNode(sections[i], text_type))
+        new_nodes.extend(split_nodes)
+    return new_nodes
             
 
 def extract_markdown_images(text):
@@ -216,7 +205,7 @@ def markdown_to_html_node(markdown):
                 list_of_li_nodes = []
                 for line in list_lines:
                     child_nodes = text_to_children(line)
-                    list_of_li_nodes.append(HTMLNode("li", None, child_nodes))
+                    list_of_li_nodes.append(ParentNode("li", child_nodes))
                 
                 node = ParentNode("ul", list_of_li_nodes, None)
 
@@ -232,7 +221,7 @@ def markdown_to_html_node(markdown):
                 list_of_li_nodes = []
                 for line in list_lines:
                     child_nodes = text_to_children(line)
-                    list_of_li_nodes.append(HTMLNode("li", None, child_nodes))
+                    list_of_li_nodes.append(ParentNode("li", child_nodes))
                 
                 node = ParentNode("ol",  list_of_li_nodes, None)
 
