@@ -55,6 +55,7 @@ def generate_page(from_path, template_path, dest_path, basepath):
     template = template.replace("{{ Title }}", title)
     template = template.replace("{{ Content }}", html_string)
 
+
     # Ensure destination directory exists
     os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
